@@ -144,7 +144,7 @@ export default function App() {
 
   // --- FUNÇÕES DE TURMA ---
   function adicionarTurma() {
-    const nome = prompt("Nome da nova turma (Ex: 1º Ano A):");
+    const nome = prompt("Nome da turma (Ex: Turma Golf - Agentes):");
     if (!nome) return;
     const cor = CORES_DISPONIVEIS[turmas.length % CORES_DISPONIVEIS.length];
     const nova = { id: Date.now(), nome, cor };
@@ -430,7 +430,7 @@ export default function App() {
         {aba === "disciplina" && (
           <div>
             <div style={ESTILOS.aviso}>
-              Crie a turma. Clique no nome para ativar. Use o "X" para excluir.
+              Crie a turma. Defina o horário e quantidade de professores.
             </div>
 
             <div style={ESTILOS.inputGroup}>
@@ -491,7 +491,7 @@ export default function App() {
                 />
               </label>
               <label>
-                Qtde Aulas (Peso):{" "}
+                Horas/aula:{" "}
                 <input
                   type="number"
                   value={quantidadeAulas}
