@@ -399,7 +399,9 @@ export default function App() {
   // --- RENDERIZAÇÃO ---
   return (
     <div style={ESTILOS.container}>
-      <h2 style={ESTILOS.header}>📅 Sistema de Gestão de Aulas</h2>
+      <h2 style={ESTILOS.header}>
+        📅 Sistema de Gestão de Aulas - CFP 2026 - ACADEPOL
+      </h2>
 
       <div style={ESTILOS.menu}>
         <button
