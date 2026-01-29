@@ -4,586 +4,622 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas"; // Importante: Adicione essa dependência
+import html2canvas from "html2canvas";
 
-// --- CONFIGURAÇÃO VISUAL (ESTILOS) ---
+// --- ESTILOS VISUAIS ---
 const ESTILOS = {
   container: {
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     padding: "20px",
-    maxWidth: "1200px",
+    maxWidth: "1280px",
     margin: "0 auto",
+    backgroundColor: "#f1f5f9",
+    minHeight: "100vh",
   },
-  header: { textAlign: "center", marginBottom: "30px", color: "#333" },
+  header: {
+    textAlign: "center",
+    marginBottom: "20px",
+    color: "#1e293b",
+    borderBottom: "2px solid #cbd5e1",
+    paddingBottom: "10px",
+  },
   menu: {
     display: "flex",
     gap: "10px",
     marginBottom: "20px",
-    flexWrap: "wrap",
     justifyContent: "center",
+    flexWrap: "wrap",
   },
   btnMenu: (ativo) => ({
-    padding: "10px 20px",
+    padding: "12px 25px",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "8px",
     cursor: "pointer",
-    backgroundColor: ativo ? "#2563eb" : "#e5e7eb",
-    color: ativo ? "white" : "#374151",
+    backgroundColor: ativo ? "#2563eb" : "#ffffff",
+    color: ativo ? "white" : "#64748b",
     fontWeight: "bold",
     fontSize: "14px",
+    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+    transition: "0.2s",
   }),
   card: {
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    padding: "15px",
-    marginBottom: "20px",
     backgroundColor: "white",
+    borderRadius: "12px",
+    padding: "25px",
+    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+    border: "1px solid #e2e8f0",
   },
-  inputGroup: {
+  controlBar: {
     display: "flex",
     gap: "15px",
     alignItems: "center",
-    marginBottom: "15px",
+    marginBottom: "20px",
+    padding: "15px",
+    backgroundColor: "#f8fafc",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
     flexWrap: "wrap",
   },
-  input: { padding: "8px", borderRadius: "4px", border: "1px solid #ccc" },
+  input: {
+    padding: "8px 12px",
+    borderRadius: "6px",
+    border: "1px solid #cbd5e1",
+    fontSize: "14px",
+  },
   btnAcao: {
     padding: "8px 16px",
     backgroundColor: "#16a34a",
     color: "white",
     border: "none",
-    borderRadius: "4px",
+    borderRadius: "6px",
     cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "14px",
   },
-  btnDelete: {
-    backgroundColor: "#ef4444",
+  btnPDF: {
+    padding: "10px 20px",
+    backgroundColor: "#2563eb",
     color: "white",
     border: "none",
-    borderRadius: "4px",
+    borderRadius: "6px",
     cursor: "pointer",
-    marginLeft: "5px",
-    padding: "2px 6px",
+    fontWeight: "600",
+    display: "flex",
+    alignItems: "center",
+    gap: "5px",
+  },
+  btnLimpar: {
+    padding: "10px 20px",
+    backgroundColor: "#dc2626",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600",
+  },
+  turmaTag: (cor, ativa) => ({
+    backgroundColor: cor,
+    color: "white",
+    padding: "6px 12px",
+    border: ativa ? "3px solid #1e293b" : "3px solid transparent",
+    borderRadius: "20px",
+    cursor: "pointer",
     fontSize: "12px",
     fontWeight: "bold",
-  },
+    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+  }),
   aviso: {
-    backgroundColor: "#fee2e2",
-    color: "#991b1b",
-    padding: "10px",
-    borderRadius: "4px",
-    marginBottom: "10px",
+    backgroundColor: "#eff6ff",
+    color: "#1e40af",
+    padding: "12px",
+    borderRadius: "8px",
+    marginBottom: "15px",
+    borderLeft: "4px solid #3b82f6",
+    fontSize: "14px",
   },
+  tabelaContainer: {
+    marginTop: "30px",
+    display: "grid",
+    gridTemplateColumns: "1.5fr 1fr",
+    gap: "30px",
+  },
+  tabela: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
+  th: {
+    backgroundColor: "#f1f5f9",
+    padding: "10px",
+    textAlign: "left",
+    borderBottom: "2px solid #cbd5e1",
+    color: "#475569",
+  },
+  td: { padding: "8px", borderBottom: "1px solid #e2e8f0", color: "#334155" },
 };
 
-const CORES_DISPONIVEIS = [
+const CORES_TURMAS = [
   "#2563eb",
-  "#16a34a",
+  "#059669",
   "#7c3aed",
-  "#ea580c",
-  "#0d9488",
+  "#d97706",
   "#db2777",
-  "#8b5cf6",
-  "#f43f5e",
-  "#1e40af",
-  "#b91c1c",
+  "#0891b2",
+  "#dc2626",
 ];
 
 export default function App() {
-  // --- ESTADOS (DADOS) ---
-  const [aba, setAba] = useState("disciplina");
-
-  // Referência para controlar o calendário visualmente
-  const calendarRef = useRef(null);
-
-  const [turmas, setTurmas] = useState(
-    () => JSON.parse(localStorage.getItem("turmas")) || []
-  );
-  const [professores, setProfessores] = useState(
-    () => JSON.parse(localStorage.getItem("professores")) || []
-  );
-  const [aulas, setAulas] = useState(
-    () => JSON.parse(localStorage.getItem("aulas")) || []
-  );
-  const [distribuicao, setDistribuicao] = useState(
-    () => JSON.parse(localStorage.getItem("distribuicao")) || []
-  );
-
-  const [turmaAtiva, setTurmaAtiva] = useState(null);
-
-  // Inputs da aula
-  const [horaInicio, setHoraInicio] = useState("");
-  const [quantidadeAulas, setQuantidadeAulas] = useState(1);
-  const [qtdProfessoresNecessarios, setQtdProfessoresNecessarios] = useState(1);
-
-  // Controle do Mês de Interesse (Padrão: Mês Atual)
+  const [aba, setAba] = useState("cadastro");
   const [mesSelecionado, setMesSelecionado] = useState(
     new Date().toISOString().slice(0, 7)
   ); // Formato YYYY-MM
 
-  // --- SALVAR AUTOMATICAMENTE ---
-  useEffect(() => {
-    localStorage.setItem("turmas", JSON.stringify(turmas));
-  }, [turmas]);
-  useEffect(() => {
-    localStorage.setItem("professores", JSON.stringify(professores));
-  }, [professores]);
-  useEffect(() => {
-    localStorage.setItem("aulas", JSON.stringify(aulas));
-  }, [aulas]);
-  useEffect(() => {
-    localStorage.setItem("distribuicao", JSON.stringify(distribuicao));
-  }, [distribuicao]);
+  // --- DADOS ---
+  const [turmas, setTurmas] = useState(
+    () => JSON.parse(localStorage.getItem("db_turmas")) || []
+  );
+  const [professores, setProfessores] = useState(
+    () => JSON.parse(localStorage.getItem("db_professores")) || []
+  );
+  const [aulas, setAulas] = useState(
+    () => JSON.parse(localStorage.getItem("db_aulas")) || []
+  );
+  const [resultado, setResultado] = useState([]);
 
-  // Função para mudar o calendário quando o usuário troca o input de mês
+  // --- CONTROLES ---
+  const [turmaAtiva, setTurmaAtiva] = useState(null);
+  const [horaInicio, setHoraInicio] = useState("18:30");
+  const [qtdAulas, setQtdAulas] = useState(2);
+  const [qtdProfs, setQtdProfs] = useState(1);
+  const [vinculoPendente, setVinculoPendente] = useState(null);
+
+  // Refs
+  const calendarRefCadastro = useRef(null);
+
   useEffect(() => {
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.gotoDate(mesSelecionado + "-01");
+    localStorage.setItem("db_turmas", JSON.stringify(turmas));
+    localStorage.setItem("db_professores", JSON.stringify(professores));
+    localStorage.setItem("db_aulas", JSON.stringify(aulas));
+  }, [turmas, professores, aulas]);
+
+  // Atualiza o calendário de cadastro se mudar o mês
+  useEffect(() => {
+    if (calendarRefCadastro.current) {
+      calendarRefCadastro.current.getApi().gotoDate(mesSelecionado + "-01");
     }
-  }, [mesSelecionado, aba]); // Executa quando muda o mês ou a aba
+  }, [mesSelecionado]);
 
-  // --- FUNÇÕES DE TURMA ---
-  function adicionarTurma() {
-    const nome = prompt("Nome da turma (Ex: Turma Golf - Agentes):");
+  // --- FUNÇÕES ---
+
+  const adicionarTurma = () => {
+    const nome = prompt("Nome da Turma:");
     if (!nome) return;
-    const cor = CORES_DISPONIVEIS[turmas.length % CORES_DISPONIVEIS.length];
-    const nova = { id: Date.now(), nome, cor };
+    const nova = {
+      id: Date.now(),
+      nome,
+      cor: CORES_TURMAS[turmas.length % CORES_TURMAS.length],
+    };
     setTurmas([...turmas, nova]);
     setTurmaAtiva(nova.id);
-  }
+  };
 
-  function removerTurma(id) {
-    if (
-      window.confirm(
-        "Tem certeza? Isso apagará a turma e todas as aulas agendadas para ela."
-      )
-    ) {
-      setTurmas((prev) => prev.filter((t) => t.id !== id));
-      setAulas((prev) => prev.filter((a) => a.turmaId !== id));
-      if (turmaAtiva === id) setTurmaAtiva(null);
-    }
-  }
+  const gerenciarCliqueData = (info) => {
+    if (vinculoPendente) return;
+    if (!turmaAtiva) return alert("⚠️ Selecione uma TURMA antes.");
 
-  function toggleAula(info) {
-    if (!turmaAtiva)
-      return alert(
-        "Selecione uma turma primeiro (botões acima do calendário)."
-      );
-    if (!horaInicio) return alert("Defina o horário de início da aula.");
+    const turmaObj = turmas.find((t) => t.id === turmaAtiva);
+    const idUnico = `${turmaAtiva}-${info.dateStr}-${horaInicio}`;
 
-    const turma = turmas.find((t) => t.id === turmaAtiva);
-    const idAula = `${turmaAtiva}-${info.dateStr}-${horaInicio}`;
-
-    const existe = aulas.find((a) => a.id === idAula);
-
-    if (existe) {
-      setAulas((prev) => prev.filter((a) => a.id !== idAula));
+    if (aulas.find((a) => a.id === idUnico)) {
+      setAulas((prev) => prev.filter((a) => a.id !== idUnico));
     } else {
       setAulas((prev) => [
         ...prev,
         {
-          id: idAula,
-          turmaId: turma.id,
-          turmaNome: turma.nome,
-          turmaCor: turma.cor,
+          id: idUnico,
+          turmaId: turmaObj.id,
+          turmaNome: turmaObj.nome,
+          turmaCor: turmaObj.cor,
           date: info.dateStr,
           horaInicio,
-          quantidadeAulas,
-          qtdProfessoresNecessarios, // Salvamos quantos professores essa aula exige
+          qtdAulas,
+          qtdProfs,
+          vinculoId: null,
         },
       ]);
     }
-  }
+  };
 
-  // --- FUNÇÕES DE PROFESSOR ---
-  function adicionarProfessor() {
-    const nome = prompt("Nome do professor:");
-    if (!nome) return;
-    setProfessores((prev) => [
-      ...prev,
-      { id: Date.now(), nome, disponibilidade: [] },
-    ]);
-  }
-
-  function removerProfessor(id) {
-    if (window.confirm("Tem certeza que deseja remover este professor?")) {
-      setProfessores((prev) => prev.filter((p) => p.id !== id));
+  const gerenciarVincular = (e, aulaId) => {
+    e.stopPropagation();
+    if (vinculoPendente === aulaId) {
+      setVinculoPendente(null);
+      return;
     }
-  }
-
-  function toggleDisponibilidade(profId, info) {
-    setProfessores((prev) =>
-      prev.map((p) => {
-        if (p.id !== profId) return p;
-        const jaDisponivel = p.disponibilidade.includes(info.dateStr);
-        return {
-          ...p,
-          disponibilidade: jaDisponivel
-            ? p.disponibilidade.filter((d) => d !== info.dateStr)
-            : [...p.disponibilidade, info.dateStr],
-        };
-      })
-    );
-  }
-
-  // --- LÓGICA DE DISTRIBUIÇÃO ---
-  function distribuirAulas() {
-    const contadorAulas = {};
-    professores.forEach((p) => (contadorAulas[p.id] = 0));
-    const ocupacaoProfessor = new Set();
-    const resultado = [];
-
-    for (const aula of aulas) {
-      const vagas = aula.qtdProfessoresNecessarios || 1;
-      let candidatos = professores.filter((p) =>
-        p.disponibilidade.includes(aula.date)
+    if (!vinculoPendente) {
+      setVinculoPendente(aulaId);
+    } else {
+      const novoVinculoId = `VINC-${Date.now()}`;
+      setAulas((prev) =>
+        prev.map((a) => {
+          if (a.id === vinculoPendente || a.id === aulaId) {
+            return { ...a, vinculoId: novoVinculoId };
+          }
+          return a;
+        })
       );
+      setVinculoPendente(null);
+      alert("✅ Aulas vinculadas!");
+    }
+  };
 
-      candidatos = candidatos.filter((p) => {
-        const chaveOcupacao = `${p.id}-${aula.date}-${aula.horaInicio}`;
-        return !ocupacaoProfessor.has(chaveOcupacao);
-      });
+  const calcularDistribuicao = () => {
+    const horasProfessor = {};
+    professores.forEach((p) => (horasProfessor[p.id] = 0));
+    const ocupacao = new Set();
+    const memoriaVinculos = {};
 
-      candidatos.sort((a, b) => contadorAulas[a.id] - contadorAulas[b.id]);
-      const selecionados = candidatos.slice(0, vagas);
+    const aulasDistribuidas = aulas.map((aula) => {
+      let profsSelecionados = [];
+      const chaveVinculo = aula.vinculoId
+        ? `${aula.vinculoId}-${aula.date}`
+        : null;
+      const vagas = aula.qtdProfs || 1;
 
-      if (selecionados.length > 0) {
-        const nomesSelecionados = [];
-        const idsSelecionados = [];
-
-        selecionados.forEach((prof) => {
-          ocupacaoProfessor.add(`${prof.id}-${aula.date}-${aula.horaInicio}`);
-          contadorAulas[prof.id] += aula.quantidadeAulas;
-          nomesSelecionados.push(prof.nome);
-          idsSelecionados.push(prof.id);
-        });
-
-        resultado.push({
-          id: aula.id,
-          turmaId: aula.turmaId,
-          date: aula.date,
-          backgroundColor: aula.turmaCor,
-          extendedProps: {
-            ...aula,
-            professorNome: nomesSelecionados.join(", "),
-            professorIds: idsSelecionados,
-          },
+      if (chaveVinculo && memoriaVinculos[chaveVinculo]) {
+        profsSelecionados = memoriaVinculos[chaveVinculo];
+        profsSelecionados.forEach((p) => {
+          horasProfessor[p.id] += aula.qtdAulas;
+          ocupacao.add(`${p.id}-${aula.date}-${aula.horaInicio}`);
         });
       } else {
-        resultado.push({
-          id: aula.id,
-          turmaId: aula.turmaId,
-          date: aula.date,
-          backgroundColor: "#ef4444",
-          extendedProps: {
-            ...aula,
-            professorNome: "Ninguém Disponível",
-            professorIds: [],
-          },
+        const disponiveis = professores.filter(
+          (p) =>
+            p.disponibilidade.includes(aula.date) &&
+            !ocupacao.has(`${p.id}-${aula.date}-${aula.horaInicio}`)
+        );
+
+        disponiveis.sort((a, b) => horasProfessor[a.id] - horasProfessor[b.id]);
+        profsSelecionados = disponiveis.slice(0, vagas);
+
+        profsSelecionados.forEach((p) => {
+          horasProfessor[p.id] += aula.qtdAulas;
+          ocupacao.add(`${p.id}-${aula.date}-${aula.horaInicio}`);
         });
+
+        if (chaveVinculo && profsSelecionados.length > 0)
+          memoriaVinculos[chaveVinculo] = profsSelecionados;
       }
+
+      const nomesFormatados =
+        profsSelecionados.length > 0
+          ? profsSelecionados.map((p) => p.nome).join(", ")
+          : "⚠️ PENDENTE";
+
+      return {
+        id: aula.id,
+        title: `${aula.turmaNome}`,
+        date: aula.date,
+        backgroundColor:
+          profsSelecionados.length === vagas
+            ? aula.turmaCor
+            : profsSelecionados.length > 0
+            ? "#f59e0b"
+            : "#ef4444",
+        extendedProps: {
+          turma: aula.turmaNome,
+          turmaId: aula.turmaId,
+          horaInicio: aula.horaInicio,
+          profIds: profsSelecionados.map((p) => p.id),
+          profNomes: nomesFormatados,
+          qtd: aula.qtdAulas,
+        },
+      };
+    });
+
+    setResultado(aulasDistribuidas);
+    setAba("relatorio");
+  };
+
+  const gerarPDF = async () => {
+    const elemento = document.getElementById("area-relatorio-pdf");
+    if (!elemento) return;
+
+    // Captura o elemento inteiro (Calendario + Tabelas)
+    const canvas = await html2canvas(elemento, {
+      scale: 2,
+      useCORS: true,
+      scrollY: -window.scrollY, // Garante que pegue mesmo se estiver scrollado
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("l", "mm", "a4"); // Paisagem
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    // Calcula a proporção para caber na folha A4
+    const imgProps = pdf.getImageProperties(imgData);
+    const ratio = imgProps.width / imgProps.height;
+
+    // Ajusta a altura baseada na largura da A4
+    const finalHeight = pdfWidth / ratio;
+
+    // Se a altura for maior que a página, ajusta pela altura
+    if (finalHeight > pdfHeight) {
+      const finalWidth = pdfHeight * ratio;
+      pdf.addImage(
+        imgData,
+        "PNG",
+        (pdfWidth - finalWidth) / 2,
+        0,
+        finalWidth,
+        pdfHeight
+      );
+    } else {
+      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, finalHeight);
     }
-    setDistribuicao(resultado);
-    setAba("visao-geral");
-  }
 
-  // --- RELATÓRIO PDF COM VISUAL E MESES ---
-  async function exportarPDF() {
-    // 1. Captura o elemento do calendário no DOM
-    const calendarioElement = document.getElementById(
-      "calendario-visual-final"
-    );
+    pdf.save(`Escala_ACADEPOL_${mesSelecionado}.pdf`);
+  };
 
-    if (!calendarioElement) return alert("Erro ao encontrar o calendário.");
+  // --- CÁLCULOS ESTATÍSTICOS ---
+  const resumoProfessores = professores
+    .map((p) => {
+      const aulasDoProf = resultado.filter(
+        (r) => r.extendedProps.profIds && r.extendedProps.profIds.includes(p.id)
+      );
+      const totalGeral = aulasDoProf.reduce(
+        (acc, curr) => acc + curr.extendedProps.qtd,
+        0
+      );
+      const detalheTurmas = turmas
+        .map((t) => {
+          const qtdNaTurma = aulasDoProf
+            .filter((a) => a.extendedProps.turmaId === t.id)
+            .reduce((acc, curr) => acc + curr.extendedProps.qtd, 0);
+          return qtdNaTurma > 0 ? `${t.nome}: ${qtdNaTurma}` : null;
+        })
+        .filter(Boolean)
+        .join(", ");
+      return { nome: p.nome, total: totalGeral, detalhe: detalheTurmas };
+    })
+    .filter((item) => item.total > 0)
+    .sort((a, b) => b.total - a.total);
 
-    // Feedback visual que está processando
-    const btn = document.getElementById("btn-pdf");
-    if (btn) btn.innerText = "Gerando PDF...";
+  const resumoTurmas = turmas
+    .map((t) => ({
+      nome: t.nome,
+      total: resultado
+        .filter((r) => r.extendedProps.turma === t.nome)
+        .reduce((acc, curr) => acc + curr.extendedProps.qtd, 0),
+    }))
+    .sort((a, b) => b.total - a.total);
 
-    try {
-      // Tira o "print" do calendário
-      const canvas = await html2canvas(calendarioElement, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
-
-      const doc = new jsPDF("p", "mm", "a4");
-      const width = doc.internal.pageSize.getWidth();
-
-      // PÁGINA 1: CALENDÁRIO VISUAL
-      doc.setFontSize(18);
-      doc.text(`Calendário Visual - ${mesSelecionado}`, 10, 15);
-
-      // Adiciona a imagem do calendário (ajustando largura para caber no A4)
-      const imgProps = doc.getImageProperties(imgData);
-      const pdfHeight = (imgProps.height * (width - 20)) / imgProps.width;
-      doc.addImage(imgData, "PNG", 10, 25, width - 20, pdfHeight);
-
-      // PÁGINA 2: RELATÓRIO TEXTUAL
-      doc.addPage();
-      doc.setFontSize(18);
-      doc.text("Relatório Detalhado de Aulas", 10, 20);
-
-      let y = 40;
-
-      professores.forEach((p) => {
-        // Filtra aulas deste professor
-        const aulasDoProf = distribuicao.filter(
-          (d) =>
-            d.extendedProps.professorIds &&
-            d.extendedProps.professorIds.includes(p.id)
-        );
-
-        const totalGeral = aulasDoProf.reduce(
-          (acc, curr) => acc + curr.extendedProps.quantidadeAulas,
-          0
-        );
-
-        // AGORA AGRUPAMOS POR MÊS
-        const porMes = {};
-        aulasDoProf.forEach((aula) => {
-          const mesAno = aula.date.substring(0, 7); // Pega "2024-02"
-          const qtd = aula.extendedProps.quantidadeAulas;
-          porMes[mesAno] = (porMes[mesAno] || 0) + qtd;
-        });
-
-        if (y > 250) {
-          doc.addPage();
-          y = 20;
-        }
-
-        // Nome do Professor
-        doc.setFontSize(14);
-        doc.setFont(undefined, "bold");
-        doc.text(`Professor: ${p.nome}`, 10, y);
-        doc.text(`Total Geral: ${totalGeral}`, 150, y);
-        y += 8;
-
-        doc.setFontSize(10);
-        doc.setFont(undefined, "normal");
-
-        // Lista discriminada por mês
-        if (Object.keys(porMes).length === 0) {
-          doc.text(" - Nenhuma aula atribuída.", 15, y);
-          y += 6;
-        } else {
-          // Ordena os meses
-          Object.keys(porMes)
-            .sort()
-            .forEach((mesKey) => {
-              // Formata a data para ficar bonitinho (ex: 2024-02)
-              const [ano, mes] = mesKey.split("-");
-              doc.text(` - Mês ${mes}/${ano}: ${porMes[mesKey]} aulas`, 15, y);
-              y += 5;
-            });
-        }
-        y += 10;
-      });
-
-      doc.save(`relatorio_${mesSelecionado}.pdf`);
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao gerar imagem do calendário.");
-    } finally {
-      if (btn) btn.innerText = "📄 Baixar Relatório PDF";
-    }
-  }
-
-  function limparDados() {
-    if (
-      window.confirm("Isso apagará TUDO (Turmas e Professores). Continuar?")
-    ) {
-      localStorage.clear();
-      window.location.reload();
-    }
-  }
-
-  // --- RENDERIZAÇÃO ---
   return (
     <div style={ESTILOS.container}>
-      <h2 style={ESTILOS.header}>
-        📅 Sistema de Gestão de Aulas - CFP 2026 - ACADEPOL
-      </h2>
+      <header style={ESTILOS.header}>
+        <h1>🏛️ ACADEPOL - Gestão de Escalas</h1>
+        <p style={{ color: "#64748b" }}>
+          Sistema Integrado de Distribuição de Aulas
+        </p>
+      </header>
 
       <div style={ESTILOS.menu}>
         <button
-          style={ESTILOS.btnMenu(aba === "disciplina")}
-          onClick={() => setAba("disciplina")}
+          style={ESTILOS.btnMenu(aba === "cadastro")}
+          onClick={() => setAba("cadastro")}
         >
-          1. Cadastrar Turmas/Aulas
+          1. Cadastrar Aulas
         </button>
         <button
           style={ESTILOS.btnMenu(aba === "professores")}
           onClick={() => setAba("professores")}
         >
-          2. Cadastrar Professores
+          2. Disponibilidade Professores
         </button>
         <button
-          style={ESTILOS.btnMenu(aba === "visao-geral")}
-          onClick={() => {
-            distribuirAulas();
-            setAba("visao-geral");
-          }}
+          style={ESTILOS.btnMenu(aba === "relatorio")}
+          onClick={calcularDistribuicao}
         >
-          3. Resultado da Distribuição
+          3. Gerar Relatório
         </button>
       </div>
 
       <div style={ESTILOS.card}>
-        {/* ABA 1: DISCIPLINA */}
-        {aba === "disciplina" && (
-          <div>
-            <div style={ESTILOS.aviso}>
-              Crie a turma. Defina o horário e quantidade de professores.
-            </div>
-
-            <div style={ESTILOS.inputGroup}>
+        {/* ABA 1: CADASTRO */}
+        {aba === "cadastro" && (
+          <>
+            <div style={ESTILOS.controlBar}>
               <button onClick={adicionarTurma} style={ESTILOS.btnAcao}>
                 + Nova Turma
               </button>
               <div
                 style={{
-                  borderLeft: "2px solid #ddd",
-                  paddingLeft: 10,
                   display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
+                  gap: "10px",
+                  flex: 1,
+                  justifyContent: "center",
                 }}
               >
-                {turmas.map((t) => (
-                  <div
-                    key={t.id}
-                    style={{ display: "flex", alignItems: "center" }}
-                  >
-                    <button
-                      onClick={() => setTurmaAtiva(t.id)}
-                      style={{
-                        padding: "5px 10px",
-                        border:
-                          turmaAtiva === t.id
-                            ? "3px solid #000"
-                            : "1px solid #ccc",
-                        backgroundColor: t.cor,
-                        color: "white",
-                        textShadow: "0px 0px 3px #000",
-                        cursor: "pointer",
-                        borderRadius: 4,
-                      }}
-                    >
-                      {t.nome}
-                    </button>
-                    <button
-                      onClick={() => removerTurma(t.id)}
-                      style={ESTILOS.btnDelete}
-                      title="Excluir Turma"
-                    >
-                      X
-                    </button>
-                  </div>
-                ))}
+                <input
+                  type="month"
+                  value={mesSelecionado}
+                  onChange={(e) => setMesSelecionado(e.target.value)}
+                  style={ESTILOS.input}
+                />
               </div>
-            </div>
-
-            <div style={ESTILOS.inputGroup}>
-              <label>
-                Horário Início:{" "}
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: "14px" }}>Horário:</span>
                 <input
                   type="time"
                   value={horaInicio}
                   onChange={(e) => setHoraInicio(e.target.value)}
                   style={ESTILOS.input}
                 />
-              </label>
-              <label>
-                Horas/aula:{" "}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: "14px" }}>Carga:</span>
                 <input
                   type="number"
-                  value={quantidadeAulas}
-                  onChange={(e) => setQuantidadeAulas(Number(e.target.value))}
-                  style={{ ...ESTILOS.input, width: 50 }}
+                  value={qtdAulas}
+                  onChange={(e) => setQtdAulas(Number(e.target.value))}
+                  style={{ ...ESTILOS.input, width: "50px" }}
                 />
-              </label>
-              <label style={{ borderLeft: "2px solid #ddd", paddingLeft: 10 }}>
-                Qtde Profs:
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: "14px" }}>Profs:</span>
                 <input
                   type="number"
                   min="1"
-                  value={qtdProfessoresNecessarios}
-                  onChange={(e) =>
-                    setQtdProfessoresNecessarios(Number(e.target.value))
-                  }
-                  style={{ ...ESTILOS.input, width: 50, marginLeft: 5 }}
+                  value={qtdProfs}
+                  onChange={(e) => setQtdProfs(Number(e.target.value))}
+                  style={{ ...ESTILOS.input, width: "50px" }}
                 />
-              </label>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "5px",
+                  flexWrap: "wrap",
+                  marginLeft: "auto",
+                }}
+              >
+                {turmas.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTurmaAtiva(t.id)}
+                    style={ESTILOS.turmaTag(t.cor, turmaAtiva === t.id)}
+                  >
+                    {t.nome}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <FullCalendar
+              ref={calendarRefCadastro}
               plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               locale={ptBrLocale}
-              dateClick={toggleAula}
+              dateClick={gerenciarCliqueData}
+              eventClick={(info) => {
+                if (!vinculoPendente && !info.event.extendedProps.vinculoId) {
+                  if (window.confirm("Remover aula?"))
+                    setAulas((prev) =>
+                      prev.filter((a) => a.id !== info.event.id)
+                    );
+                } else {
+                  const e = { stopPropagation: () => {} };
+                  gerenciarVincular(e, info.event.id);
+                }
+              }}
               events={aulas.map((a) => ({
+                id: a.id,
                 date: a.date,
                 backgroundColor: a.turmaCor,
-                extendedProps: {
-                  turmaNome: a.turmaNome,
-                  horaInicio: a.horaInicio,
-                  quantidadeAulas: a.quantidadeAulas,
-                  qtdProfessores: a.qtdProfessoresNecessarios || 1,
-                },
+                extendedProps: { ...a },
               }))}
               eventContent={(arg) => (
                 <div
                   style={{
-                    fontSize: "10px",
-                    padding: "2px",
-                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "2px 4px",
+                    border:
+                      vinculoPendente === arg.event.id
+                        ? "2px solid #fbbf24"
+                        : "1px solid transparent",
+                    borderRadius: "3px",
                   }}
                 >
-                  <b>
-                    {arg.event.extendedProps.turmaNome} -{" "}
-                    {arg.event.extendedProps.horaInicio} (
-                    {arg.event.extendedProps.quantidadeAulas})
-                  </b>
-                  <br />
-                  Profs: {arg.event.extendedProps.qtdProfessores}
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {arg.event.extendedProps.vinculoId ? "🔗 " : ""}
+                    {arg.event.extendedProps.turmaNome}
+                  </div>
+                  <button
+                    onClick={(e) => gerenciarVincular(e, arg.event.id)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🔗
+                  </button>
                 </div>
               )}
-              height="auto"
             />
-          </div>
+          </>
         )}
 
         {/* ABA 2: PROFESSORES */}
         {aba === "professores" && (
-          <div>
-            <div style={ESTILOS.aviso}>
-              Clique nos dias disponíveis do professor.
+          <>
+            <div style={ESTILOS.controlBar}>
+              <button
+                onClick={() => {
+                  const n = prompt("Nome do Professor:");
+                  if (n)
+                    setProfessores([
+                      ...professores,
+                      { id: Date.now(), nome: n, disponibilidade: [] },
+                    ]);
+                }}
+                style={ESTILOS.btnAcao}
+              >
+                + Cadastrar Professor
+              </button>
+              <div style={{ fontSize: "14px", color: "#64748b" }}>
+                Clique nos dias para marcar disponibilidade.
+              </div>
             </div>
-            <button onClick={adicionarProfessor} style={ESTILOS.btnAcao}>
-              + Adicionar Professor
-            </button>
-            <div style={{ marginTop: 20 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                gap: "20px",
+              }}
+            >
               {professores.map((p) => (
                 <div
                   key={p.id}
                   style={{
-                    marginBottom: 30,
-                    borderTop: "1px solid #eee",
-                    paddingTop: 10,
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    padding: "15px",
+                    backgroundColor: "#f8fafc",
                   }}
                 >
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
                       justifyContent: "space-between",
+                      marginBottom: "10px",
                     }}
                   >
-                    <h3>{p.nome}</h3>
-                    <button
-                      onClick={() => removerProfessor(p.id)}
-                      style={{ ...ESTILOS.btnDelete, padding: "5px 10px" }}
+                    <h3
+                      style={{ margin: 0, fontSize: "16px", color: "#334155" }}
                     >
-                      Excluir Professor
+                      {p.nome}
+                    </h3>
+                    <button
+                      onClick={() =>
+                        setProfessores((prev) =>
+                          prev.filter((x) => x.id !== p.id)
+                        )
+                      }
+                      style={{
+                        ...ESTILOS.btnAcao,
+                        backgroundColor: "#ef4444",
+                        fontSize: "10px",
+                        padding: "4px 8px",
+                      }}
+                    >
+                      Excluir
                     </button>
                   </div>
                   <FullCalendar
@@ -596,120 +632,191 @@ export default function App() {
                       center: "",
                       right: "prev,next",
                     }}
-                    dateClick={(info) => toggleDisponibilidade(p.id, info)}
+                    dateClick={(info) => {
+                      setProfessores((prev) =>
+                        prev.map((prof) =>
+                          prof.id === p.id
+                            ? {
+                                ...prof,
+                                disponibilidade: prof.disponibilidade.includes(
+                                  info.dateStr
+                                )
+                                  ? prof.disponibilidade.filter(
+                                      (d) => d !== info.dateStr
+                                    )
+                                  : [...prof.disponibilidade, info.dateStr],
+                              }
+                            : prof
+                        )
+                      );
+                    }}
                     events={p.disponibilidade.map((d) => ({
                       display: "background",
                       date: d,
-                      color: "#10b981",
+                      color: "#22c55e",
                     }))}
                   />
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
 
-        {/* ABA 3: VISÃO GERAL */}
-        {aba === "visao-geral" && (
-          <div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 20,
-                alignItems: "center",
-              }}
-            >
-              <h3>Resultado Final</h3>
-
-              {/* NOVO SELETOR DE MÊS */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <label>Mês de Referência:</label>
+        {/* ABA 3: RELATÓRIO (PDF + SELETOR DE MÊS CORRIGIDO) */}
+        {aba === "relatorio" && (
+          <>
+            <div style={ESTILOS.controlBar}>
+              <div style={{ display: "flex", gap: "10px", flex: 1 }}>
+                {/* O Input de Mês agora controla o estado que alimenta a prop 'initialDate' do calendário abaixo */}
                 <input
                   type="month"
                   value={mesSelecionado}
                   onChange={(e) => setMesSelecionado(e.target.value)}
                   style={ESTILOS.input}
                 />
-              </div>
-
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  id="btn-pdf"
-                  onClick={exportarPDF}
-                  style={ESTILOS.btnAcao}
-                >
-                  📄 Baixar Relatório PDF
-                </button>
-                <button
-                  onClick={limparDados}
-                  style={{ ...ESTILOS.btnAcao, backgroundColor: "#dc2626" }}
-                >
-                  🗑️ Limpar Tudo
+                <button onClick={gerarPDF} style={ESTILOS.btnPDF}>
+                  📄 Baixar PDF Completo
                 </button>
               </div>
+              <button
+                onClick={() => {
+                  if (window.confirm("Zerar tudo?")) {
+                    localStorage.clear();
+                    window.location.reload();
+                  }
+                }}
+                style={ESTILOS.btnLimpar}
+              >
+                🗑️ Limpar Tudo
+              </button>
             </div>
 
+            {/* ÁREA DE IMPRESSÃO UNIFICADA */}
             <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                marginBottom: 10,
-              }}
+              id="area-relatorio-pdf"
+              style={{ padding: "20px", backgroundColor: "white" }}
             >
-              {turmas.map((t) => (
-                <div
-                  key={t.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                    fontSize: 12,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 15,
-                      height: 15,
-                      backgroundColor: t.cor,
-                      borderRadius: 3,
-                    }}
-                  ></div>
-                  {t.nome}
-                </div>
-              ))}
-            </div>
+              <div
+                style={{
+                  textAlign: "center",
+                  marginBottom: "20px",
+                  borderBottom: "2px solid #000",
+                  paddingBottom: "10px",
+                }}
+              >
+                <h1 style={{ fontSize: "24px", margin: 0 }}>
+                  ACADEPOL - ESCALA DE ENSINO
+                </h1>
+                <p style={{ margin: 0, fontSize: "14px" }}>
+                  Relatório de Distribuição Mensal - {mesSelecionado}
+                </p>
+              </div>
 
-            {/* ID ADICIONADO AQUI PARA O PRINT DO PDF */}
-            <div id="calendario-visual-final">
+              {/* AQUI ESTAVA O ERRO DO MÊS: Adicionado key={mesSelecionado} e initialDate */}
               <FullCalendar
-                ref={calendarRef} // REFERÊNCIA PARA MUDAR O MÊS
+                key={mesSelecionado} // Força re-renderização quando muda o mês
                 plugins={[dayGridPlugin]}
                 initialView="dayGridMonth"
+                initialDate={mesSelecionado + "-01"} // Garante que abra no mês certo
                 locale={ptBrLocale}
-                events={distribuicao}
+                events={resultado}
+                headerToolbar={{ left: "", center: "title", right: "" }}
+                height="auto"
                 eventContent={(arg) => (
                   <div
                     style={{
                       fontSize: "10px",
-                      padding: "2px",
-                      cursor: "pointer",
+                      textAlign: "center",
+                      lineHeight: "1.2",
                     }}
-                    title={`Peso: ${arg.event.extendedProps.quantidadeAulas} aulas`}
                   >
-                    <b>
-                      {arg.event.extendedProps.turmaNome} -{" "}
-                      {arg.event.extendedProps.horaInicio} (
-                      {arg.event.extendedProps.quantidadeAulas})
-                    </b>
+                    <strong>
+                      {arg.event.extendedProps.turma} -{" "}
+                      {arg.event.extendedProps.horaInicio}
+                    </strong>
                     <br />
-                    {arg.event.extendedProps.professorNome}
+                    {arg.event.extendedProps.profNomes}
                   </div>
                 )}
               />
+
+              <div style={ESTILOS.tabelaContainer}>
+                <div>
+                  <h3
+                    style={{
+                      borderBottom: "2px solid #2563eb",
+                      color: "#1e3a8a",
+                      paddingBottom: "5px",
+                    }}
+                  >
+                    📊 Aulas por Professor
+                  </h3>
+                  <table style={ESTILOS.tabela}>
+                    <thead>
+                      <tr>
+                        <th style={ESTILOS.th}>Professor</th>
+                        <th style={ESTILOS.th}>Detalhamento</th>
+                        <th style={ESTILOS.th}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resumoProfessores.map((r, i) => (
+                        <tr
+                          key={i}
+                          style={{
+                            backgroundColor: i % 2 === 0 ? "white" : "#f8fafc",
+                          }}
+                        >
+                          <td style={ESTILOS.td}>{r.nome}</td>
+                          <td style={ESTILOS.td}>
+                            <small>{r.detalhe}</small>
+                          </td>
+                          <td style={ESTILOS.td}>
+                            <strong>{r.total}</strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div>
+                  <h3
+                    style={{
+                      borderBottom: "2px solid #2563eb",
+                      color: "#1e3a8a",
+                      paddingBottom: "5px",
+                    }}
+                  >
+                    📚 Aulas por Turma
+                  </h3>
+                  <table style={ESTILOS.tabela}>
+                    <thead>
+                      <tr>
+                        <th style={ESTILOS.th}>Turma</th>
+                        <th style={ESTILOS.th}>Carga Horária</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resumoTurmas.map((r, i) => (
+                        <tr
+                          key={i}
+                          style={{
+                            backgroundColor: i % 2 === 0 ? "white" : "#f8fafc",
+                          }}
+                        >
+                          <td style={ESTILOS.td}>{r.nome}</td>
+                          <td style={ESTILOS.td}>
+                            <strong>{r.total}</strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
