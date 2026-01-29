@@ -15,6 +15,8 @@ const ESTILOS = {
     margin: "0 auto",
     backgroundColor: "#f1f5f9",
     minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
   },
   header: {
     textAlign: "center",
@@ -48,6 +50,7 @@ const ESTILOS = {
     padding: "25px",
     boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
     border: "1px solid #e2e8f0",
+    flex: 1,
   },
   controlBar: {
     display: "flex",
@@ -132,6 +135,15 @@ const ESTILOS = {
     color: "#475569",
   },
   td: { padding: "8px", borderBottom: "1px solid #e2e8f0", color: "#334155" },
+  // NOVO ESTILO DO RODAPÉ
+  footer: {
+    textAlign: "center",
+    marginTop: "40px",
+    paddingTop: "20px",
+    borderTop: "1px solid #e2e8f0",
+    color: "#94a3b8",
+    fontSize: "12px",
+  },
 };
 
 const CORES_TURMAS = [
@@ -148,7 +160,7 @@ export default function App() {
   const [aba, setAba] = useState("cadastro");
   const [mesSelecionado, setMesSelecionado] = useState(
     new Date().toISOString().slice(0, 7)
-  ); // Formato YYYY-MM
+  );
 
   // --- DADOS ---
   const [turmas, setTurmas] = useState(
@@ -169,7 +181,6 @@ export default function App() {
   const [qtdProfs, setQtdProfs] = useState(1);
   const [vinculoPendente, setVinculoPendente] = useState(null);
 
-  // Refs
   const calendarRefCadastro = useRef(null);
 
   useEffect(() => {
@@ -178,7 +189,6 @@ export default function App() {
     localStorage.setItem("db_aulas", JSON.stringify(aulas));
   }, [turmas, professores, aulas]);
 
-  // Atualiza o calendário de cadastro se mudar o mês
   useEffect(() => {
     if (calendarRefCadastro.current) {
       calendarRefCadastro.current.getApi().gotoDate(mesSelecionado + "-01");
@@ -321,27 +331,21 @@ export default function App() {
     const elemento = document.getElementById("area-relatorio-pdf");
     if (!elemento) return;
 
-    // Captura o elemento inteiro (Calendario + Tabelas)
     const canvas = await html2canvas(elemento, {
       scale: 2,
       useCORS: true,
-      scrollY: -window.scrollY, // Garante que pegue mesmo se estiver scrollado
+      scrollY: -window.scrollY,
     });
 
     const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("l", "mm", "a4"); // Paisagem
+    const pdf = new jsPDF("l", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    // Calcula a proporção para caber na folha A4
     const imgProps = pdf.getImageProperties(imgData);
     const ratio = imgProps.width / imgProps.height;
-
-    // Ajusta a altura baseada na largura da A4
     const finalHeight = pdfWidth / ratio;
 
-    // Se a altura for maior que a página, ajusta pela altura
     if (finalHeight > pdfHeight) {
       const finalWidth = pdfHeight * ratio;
       pdf.addImage(
@@ -359,7 +363,6 @@ export default function App() {
     pdf.save(`Escala_ACADEPOL_${mesSelecionado}.pdf`);
   };
 
-  // --- CÁLCULOS ESTATÍSTICOS ---
   const resumoProfessores = professores
     .map((p) => {
       const aulasDoProf = resultado.filter(
@@ -662,12 +665,11 @@ export default function App() {
           </>
         )}
 
-        {/* ABA 3: RELATÓRIO (PDF + SELETOR DE MÊS CORRIGIDO) */}
+        {/* ABA 3: RELATÓRIO */}
         {aba === "relatorio" && (
           <>
             <div style={ESTILOS.controlBar}>
               <div style={{ display: "flex", gap: "10px", flex: 1 }}>
-                {/* O Input de Mês agora controla o estado que alimenta a prop 'initialDate' do calendário abaixo */}
                 <input
                   type="month"
                   value={mesSelecionado}
@@ -691,7 +693,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* ÁREA DE IMPRESSÃO UNIFICADA */}
             <div
               id="area-relatorio-pdf"
               style={{ padding: "20px", backgroundColor: "white" }}
@@ -712,12 +713,11 @@ export default function App() {
                 </p>
               </div>
 
-              {/* AQUI ESTAVA O ERRO DO MÊS: Adicionado key={mesSelecionado} e initialDate */}
               <FullCalendar
-                key={mesSelecionado} // Força re-renderização quando muda o mês
+                key={mesSelecionado}
                 plugins={[dayGridPlugin]}
                 initialView="dayGridMonth"
-                initialDate={mesSelecionado + "-01"} // Garante que abra no mês certo
+                initialDate={mesSelecionado + "-01"}
                 locale={ptBrLocale}
                 events={resultado}
                 headerToolbar={{ left: "", center: "title", right: "" }}
@@ -815,10 +815,27 @@ export default function App() {
                   </table>
                 </div>
               </div>
+
+              {/* CRÉDITO NO PDF */}
+              <div
+                style={{
+                  textAlign: "right",
+                  marginTop: "30px",
+                  fontSize: "10px",
+                  color: "#94a3b8",
+                }}
+              >
+                Desenvolvido por Gustavo Lazzarotto Demarco
+              </div>
             </div>
           </>
         )}
       </div>
+
+      {/* CRÉDITO NO RODAPÉ DO APP */}
+      <footer style={ESTILOS.footer}>
+        Desenvolvido por Gustavo Lazzarotto Demarco
+      </footer>
     </div>
   );
 }
