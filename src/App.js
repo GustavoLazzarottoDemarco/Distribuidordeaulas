@@ -400,9 +400,9 @@ export default function App() {
   return (
     <div style={ESTILOS.container}>
       <header style={ESTILOS.header}>
-        <h1>🏛️ ACADEPOL - Gestão de Escalas</h1>
+        <h1>🗓️ CFP 2026</h1>
         <p style={{ color: "#64748b" }}>
-          Sistema Integrado de Distribuição de Aulas
+          Sistema de Distribuição de Aulas
         </p>
       </header>
 
@@ -431,6 +431,9 @@ export default function App() {
         {/* ABA 1: CADASTRO */}
         {aba === "cadastro" && (
           <>
+          <div style={ESTILOS.aviso}>
+              <strong>Duas turmas no mesmo dia, em horários distintos?</strong> Clique no ícone de corrente 🔗 dentro de uma aula. Ela ficará amarela. Depois, clique na segunda aula. O sistema irá garantir que os professores escalados para a primeira aula também sejam escalados para a segunda.
+            </div>
             <div style={ESTILOS.controlBar}>
               <button onClick={adicionarTurma} style={ESTILOS.btnAcao}>
                 + Nova Turma
@@ -564,6 +567,9 @@ export default function App() {
         {/* ABA 2: PROFESSORES */}
         {aba === "professores" && (
           <>
+           <div style={ESTILOS.aviso}>
+              <strong>Cadastro de professores</strong> Clique no ícone de abaixo e cadastre a disponibilidade de cada professor.
+            </div>
             <div style={ESTILOS.controlBar}>
               <button
                 onClick={() => {
@@ -578,10 +584,7 @@ export default function App() {
               >
                 + Cadastrar Professor
               </button>
-              <div style={{ fontSize: "14px", color: "#64748b" }}>
-                Clique nos dias para marcar disponibilidade.
-              </div>
-            </div>
+                    </div>
             <div
               style={{
                 display: "grid",
