@@ -135,7 +135,6 @@ const ESTILOS = {
     color: "#475569",
   },
   td: { padding: "8px", borderBottom: "1px solid #e2e8f0", color: "#334155" },
-  // NOVO ESTILO DO RODAPÉ
   footer: {
     textAlign: "center",
     marginTop: "40px",
@@ -177,8 +176,11 @@ export default function App() {
   // --- CONTROLES ---
   const [turmaAtiva, setTurmaAtiva] = useState(null);
   const [horaInicio, setHoraInicio] = useState("18:30");
+
+  // ALTERAÇÃO AQUI: Ambos iniciam com 2
   const [qtdAulas, setQtdAulas] = useState(2);
-  const [qtdProfs, setQtdProfs] = useState(1);
+  const [qtdProfs, setQtdProfs] = useState(2);
+
   const [vinculoPendente, setVinculoPendente] = useState(null);
 
   const calendarRefCadastro = useRef(null);
@@ -816,7 +818,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* CRÉDITO NO PDF */}
               <div
                 style={{
                   textAlign: "right",
@@ -832,7 +833,6 @@ export default function App() {
         )}
       </div>
 
-      {/* CRÉDITO NO RODAPÉ DO APP */}
       <footer style={ESTILOS.footer}>
         Desenvolvido por Gustavo Lazzarotto Demarco
       </footer>
