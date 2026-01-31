@@ -25,6 +25,8 @@ export default function App() {
   const [mesSelecionado, setMesSelecionado] = useState(
     new Date().toISOString().slice(0, 7)
   );
+  // --- NOVO ESTADO: Controle da Janela de Ajuda ---
+  const [mostrarAjuda, setMostrarAjuda] = useState(false);
 
   // --- DADOS ---
   const [turmas, setTurmas] = useState(
@@ -92,7 +94,6 @@ export default function App() {
 
   // --- FUNÇÕES ---
 
-  // MUDANÇA AQUI: Recebe o nome direto do componente filho
   const adicionarTurma = (nomeRecebido) => {
     if (!nomeRecebido) return;
     const nova = {
@@ -347,9 +348,24 @@ export default function App() {
     <div style={ESTILOS.container}>
       <header style={ESTILOS.header}>
         <h1>🗓️ Gestão de Aulas - CFP 2026</h1>
-        <p style={{ color: "#64748b" }}>
-          Sistema Isonômico de Distribuição de Aulas
-        </p>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <p style={{ color: "#64748b", margin: 0 }}>
+            Sistema Isonômico de Distribuição de Aulas
+          </p>
+          <button
+            onClick={() => setMostrarAjuda(true)}
+            style={ESTILOS.btnAjuda}
+          >
+            ❓ Ajuda
+          </button>
+        </div>
       </header>
 
       <div style={ESTILOS.menu}>
@@ -416,6 +432,108 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* --- MODAL DE AJUDA --- */}
+      {mostrarAjuda && (
+        <div
+          style={ESTILOS.modalOverlay}
+          onClick={() => setMostrarAjuda(false)}
+        >
+          <div
+            style={ESTILOS.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={ESTILOS.modalClose}
+              onClick={() => setMostrarAjuda(false)}
+            >
+              ✕
+            </button>
+
+            <h2 style={ESTILOS.tituloAjuda}>Sobre o Sistema</h2>
+            <p style={{ lineHeight: "1.6", color: "#334155" }}>
+              Este aplicativo tem como objetivo automatizar e gerenciar a
+              distribuição de aulas da <strong>ACADEPOL</strong>, garantindo, na
+              medida do possível, isonomia na carga horária entre os professores
+              disponíveis.
+            </p>
+
+            <h3
+              style={{ color: "#2563eb", fontSize: "16px", marginTop: "20px" }}
+            >
+              Funcionalidades Principais:
+            </h3>
+
+            <ul
+              style={{
+                paddingLeft: "20px",
+                lineHeight: "1.6",
+                color: "#475569",
+              }}
+            >
+              <li style={{ marginBottom: "10px" }}>
+                <strong>1. Cadastro Visual:</strong> Clique no calendário para
+                adicionar aulas. Use o recurso de <em>Arrastar e Soltar</em>{" "}
+                para mudar datas rapidamente.
+              </li>
+              <li style={{ marginBottom: "10px" }}>
+                <strong>2. Vínculo de Aulas (🔗):</strong> Permite ligar duas
+                aulas no
+                <strong> mesmo dia</strong>. O sistema garantirá que os mesmos
+                professores sejam escalados para ambos os horários, otimizando o
+                deslocamento.
+              </li>
+              <li style={{ marginBottom: "10px" }}>
+                <strong>3. Isonomia Automática:</strong> O algoritmo de
+                distribuição prioriza professores que têm menos horas
+                acumuladas, respeitada a regra de disponibilidade, garantindo
+                uma divisão justa das aulas.
+              </li>
+              <li style={{ marginBottom: "10px" }}>
+                <strong>4. Histórico Mensal:</strong> O sistema memoriza as
+                aulas passadas. Ao gerar uma nova distribuição para o mês
+                seguinte, ele considera o acumulado dos meses anteriores.
+              </li>
+            </ul>
+
+            <h3
+              style={{ color: "#2563eb", fontSize: "16px", marginTop: "20px" }}
+            >
+              Dicas de Uso:
+            </h3>
+            <ul
+              style={{
+                paddingLeft: "20px",
+                lineHeight: "1.6",
+                color: "#475569",
+              }}
+            >
+              <li>
+                Cadastre primeiro <strong>todas</strong> as turmas e suas
+                respectivas aulas.
+              </li>
+              <li>
+                Em seguida, cadastre a disponibilidade dos professores na aba 2.
+              </li>
+              <li>
+                Por fim, gere a distribuição. Se precisar corrigir algo em um
+                mês específico, use o botão <em>"Redistribuir Mês Atual"</em>.
+              </li>
+            </ul>
+
+            <div
+              style={{
+                marginTop: "25px",
+                textAlign: "center",
+                fontSize: "12px",
+                color: "#94a3b8",
+              }}
+            >
+              Versão 1.0 - Desenvolvido por Gustavo Lazzarotto Demarco
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer style={ESTILOS.footer}>
         Desenvolvido por Gustavo Lazzarotto Demarco
